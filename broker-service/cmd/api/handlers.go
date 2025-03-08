@@ -14,7 +14,7 @@ type jsonReponse struct {
 func (app *Config) Broker(w http.ResponseWriter, r *http.Request) {
 	payload := jsonReponse{
 		Error:   false,
-		Message: "Hit the broker",
+		Message: "Hit the broker again! pow",
 	}
 	out, _ := json.MarshalIndent(payload, "", "\t")
 

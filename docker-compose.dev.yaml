@@ -1,0 +1,14 @@
+services:
+  broker-service:
+    build:
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./broker-service:/app
+    environment:
+      - WEB_PORT=80
+      - CGO_ENABLED=0
+    # Optional: enable delve debugger
+    # security_opt:
+    #   - "seccomp:unconfined"
+    # cap_add:
+    #   - SYS_PTRACE

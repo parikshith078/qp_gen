@@ -57,6 +57,7 @@ clean:
 		@$(DOCKER_COMPOSE) down -v
 		@docker system prune -f
 		@rm -rf broker-service/tmp
+		@rm -rf tmp
 
 # Restart containers
 restart:

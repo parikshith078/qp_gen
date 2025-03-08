@@ -7,7 +7,7 @@ services:
         BUILD_VERSION: ${VERSION:-1.0.0}
         BUILD_DATE: ${BUILD_DATE}
         COMMIT_SHA: ${COMMIT_SHA}
-    image: broker-service:${VERSION:-1.0.0}
+    image: pariksh1th/broker-service:${VERSION:-1.0.0}
     restart: always
     environment:
       - WEB_PORT=80

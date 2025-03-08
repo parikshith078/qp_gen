@@ -1,6 +1,8 @@
 # Default variables
 DOCKER_COMPOSE = docker compose
 DEV_COMPOSE_FILES = -f docker-compose.yaml -f docker-compose.dev.yaml
+DOCKER_REGISTRY = pariksh1th
+IMAGE_NAME = broker-service
 
 # testing
 # Version management
@@ -89,4 +91,10 @@ tag: build
 	@echo "$(COLOR_GREEN)Tagging version $(VERSION)...$(COLOR_RESET)"
 	@git tag -a v$(VERSION) -m "Version $(VERSION)"
 	@git push --follow-tags
+	@echo "$(COLOR_GREEN)Pushing Docker images version $(VERSION)...$(COLOR_RESET)"
+	@docker tag $(IMAGE_NAME):$(VERSION) $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION)
+	@docker tag $(IMAGE_NAME):$(VERSION) $(DOCKER_REGISTRY)/$(IMAGE_NAME):latest
+	@docker push $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION)
+	@docker push $(DOCKER_REGISTRY)/$(IMAGE_NAME):latest
+	@echo "$(COLOR_GREEN)Successfully pushed version $(VERSION) to Docker registry$(COLOR_RESET)"
 

@@ -30,7 +30,9 @@ LABEL org.opencontainers.image.description="Broker service for QP Generator"
 WORKDIR /app
 
 COPY --from=builder /app/brokerApp .
+COPY --from=builder /app/migrations ./migrations
 
 CMD [ "/app/brokerApp" ]
+
 
 

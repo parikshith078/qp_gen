@@ -19,6 +19,8 @@ func (app *Config) routes() *chi.Mux {
 	}))
 	mux.Use(middleware.Heartbeat("/ping"))
 	mux.Get("/health", app.Broker)
+	mux.Get("/user", app.ListUsers)
+	mux.Post("/user", app.CreateUser)
 
 	return mux
 }

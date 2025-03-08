@@ -3,19 +3,26 @@ DOCKER_COMPOSE = docker compose
 DEV_COMPOSE_FILES = -f docker-compose.yaml -f docker-compose.dev.yaml
 DOCKER_REGISTRY = pariksh1th
 IMAGE_NAME = broker-service
+SQLC = docker run --rm -v $(PWD)/broker-service:/src -w /src kjconroy/sqlc
 
 # testing
 # Version management
-VERSION := $(shell cat VERSION)
-BUILD_DATE := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
-COMMIT_SHA := $(shell git rev-parse --short HEAD)
+VERSION = $(shell cat VERSION)
+BUILD_DATE = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+COMMIT_SHA = $(shell git rev-parse --short HEAD)
+
+# database
+include .env
+export
+
+DSN = postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
 
 # Colors for terminal output
 COLOR_RESET = \033[0m
 COLOR_GREEN = \033[32m
 COLOR_YELLOW = \033[33m
 
-.PHONY: up down build dev clean restart logs help version bump-patch bump-minor bump-major tag
+.PHONY: up down build dev clean restart logs help version bump-patch bump-minor bump-major tag migrate-create migrate-up migrate-down db-prod-up db-prod-down db-dev-up db-dev-down sqlc-init sqlc-generate
 
 # Default target when just running 'make'
 help:
@@ -31,7 +38,10 @@ help:
 		@echo "$(COLOR_YELLOW)make bump-patch$(COLOR_RESET) - Bump patch version (1.0.0 -> 1.0.1)"
 		@echo "$(COLOR_YELLOW)make bump-minor$(COLOR_RESET) - Bump minor version (1.0.0 -> 1.1.0)"
 		@echo "$(COLOR_YELLOW)make bump-major$(COLOR_RESET) - Bump major version (1.0.0 -> 2.0.0)"
-		@echo "$(COLOR_YELLOW)make tag$(COLOR_RESET)	      - Build and tag the current version"
+		@echo "$(COLOR_YELLOW)make tag$(COLOR_RESET)		  - Build and tag the current version"
+		@echo "$(COLOR_YELLOW)make migrate-create$(COLOR_RESET) - Create a new migration"
+		@echo "$(COLOR_YELLOW)make migrate-up$(COLOR_RESET) - Run migrations up"
+		@echo "$(COLOR_YELLOW)make migrate-down$(COLOR_RESET) - Run migrations down"
 
 # Start production containers
 up:
@@ -97,4 +107,44 @@ tag: build
 	@docker push $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION)
 	@docker push $(DOCKER_REGISTRY)/$(IMAGE_NAME):latest
 	@echo "$(COLOR_GREEN)Successfully pushed version $(VERSION) to Docker registry$(COLOR_RESET)"
+
+migrate-create:
+	@read -p "Enter migration name: " name; \
+	docker run -v $$(pwd)/broker-service/migrations:/migrations --network host migrate/migrate \
+		create -ext sql -dir /migrations -seq $$name
+
+migrate-up:
+	@echo "$(COLOR_GREEN)Running migrations up...$(COLOR_RESET)"
+	@docker run -v $$(pwd)/broker-service/migrations:/migrations --network host migrate/migrate \
+		-path=/migrations/ -database "$(DSN)" up
+
+migrate-down:
+	@echo "$(COLOR_GREEN)Running migrations down...$(COLOR_RESET)"
+	@docker run -v $$(pwd)/broker-service/migrations:/migrations --network host migrate/migrate \
+		-path=/migrations/ -database "$(DSN)" down 1
+
+# Database container management
+db-prod-up:
+	@echo "$(COLOR_GREEN)Starting production database...$(COLOR_RESET)"
+	@$(DOCKER_COMPOSE) up -d postgres
+
+db-prod-down:
+	@echo "$(COLOR_GREEN)Stopping production database...$(COLOR_RESET)"
+	@$(DOCKER_COMPOSE) stop postgres
+
+db-dev-up:
+	@echo "$(COLOR_GREEN)Starting development database...$(COLOR_RESET)"
+	@$(DOCKER_COMPOSE) $(DEV_COMPOSE_FILES) up -d postgres
+
+db-dev-down:
+	@echo "$(COLOR_GREEN)Stopping development database...$(COLOR_RESET)"
+	@$(DOCKER_COMPOSE) $(DEV_COMPOSE_FILES) stop postgres
+
+sqlc-init:
+	@echo "$(COLOR_GREEN)Initializing SQLC...$(COLOR_RESET)"
+	@$(SQLC) init
+
+sqlc-generate:
+	@echo "$(COLOR_GREEN)Generating SQLC code...$(COLOR_RESET)"
+	@$(SQLC) generate
 

@@ -1,6 +1,7 @@
 services:
   broker-service:
     build:
+      context: ./broker-service
       dockerfile: Dockerfile.dev
     volumes:
       - ./broker-service:/app

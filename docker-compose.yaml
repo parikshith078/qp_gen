@@ -1,0 +1,10 @@
+services:
+  broker-service:
+    build: 
+      context: ./broker-service
+
+    restart: always
+    environment:
+      - WEB_PORT=80
+    ports:
+      - "8080:80"

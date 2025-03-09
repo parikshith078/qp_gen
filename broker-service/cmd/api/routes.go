@@ -18,8 +18,13 @@ func (app *Config) routes() *chi.Mux {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 	mux.Use(middleware.Heartbeat("/ping"))
-	mux.Get("/health", app.Broker)
-	mux.Post("/user", app.CreateUser)
+
+	// Public routes
+	mux.Group(func(r chi.Router) {
+		r.Get("/health", app.HealthCheck)
+	})
+
+	// Protected routes
 
 	return mux
 }

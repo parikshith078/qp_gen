@@ -3,11 +3,10 @@ package main
 import (
 	"net/http"
 
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/parikshith078/qp_gen/broker/internal/db/sqlc"
 )
 
-func (app *Config) Broker(w http.ResponseWriter, r *http.Request) {
+func (app *Config) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	payload := jsonReponse{
 		Error:   false,
 		Message: "Hit the broker again! pow",
@@ -17,7 +16,7 @@ func (app *Config) Broker(w http.ResponseWriter, r *http.Request) {
 
 func (app *Config) CreateUser(w http.ResponseWriter, r *http.Request) {
 	data := sqlc.CreateUserParams{
-		Name:         pgtype.Text{String: "dat", Valid: true},
+		Name:         "test",
 		Email:        "da",
 		Username:     "cdd",
 		PasswordHash: "tewww",

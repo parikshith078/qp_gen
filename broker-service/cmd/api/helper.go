@@ -15,7 +15,10 @@ func (app *Config) readJSON(w http.ResponseWriter, r *http.Request, data any) er
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(data)
 	if err != nil {
-		app.errorJSON(w, err, http.StatusBadRequest)
+		return err
+	}
+	err = validate.Struct(data)
+	if err != nil {
 		return err
 	}
 	return nil

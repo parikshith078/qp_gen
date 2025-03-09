@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5"
 	"github.com/parikshith078/qp_gen/broker/internal/db"
 	"github.com/parikshith078/qp_gen/broker/internal/db/sqlc"
@@ -18,11 +19,16 @@ type Config struct {
 	Db *sqlc.Queries
 }
 
+var validate *validator.Validate
+
 var dsn = os.Getenv("DSN")
 
 func main() {
 	// run migrations
 	db.RunMigrations(dsn)
+
+	// validation setup
+	validate = validator.New(validator.WithRequiredStructEnabled())
 
 	ctx := context.Background()
 	conn, err := pgx.Connect(context.Background(), dsn)

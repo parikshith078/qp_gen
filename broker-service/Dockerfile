@@ -24,7 +24,7 @@ ARG COMMIT_SHA
 LABEL org.opencontainers.image.version="${BUILD_VERSION}"
 LABEL org.opencontainers.image.created="${BUILD_DATE}"
 LABEL org.opencontainers.image.revision="${COMMIT_SHA}"
-LABEL org.opencontainers.image.title="Broker Service"
+LABEL org.opencontainers.image.title="QP Broker Service"
 LABEL org.opencontainers.image.description="Broker service for QP Generator"
 
 WORKDIR /app

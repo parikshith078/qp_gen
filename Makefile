@@ -22,7 +22,7 @@ COLOR_RESET = \033[0m
 COLOR_GREEN = \033[32m
 COLOR_YELLOW = \033[33m
 
-.PHONY: up down build dev clean restart logs help version bump-patch bump-minor bump-major tag migrate-create migrate-up migrate-down db-prod-up db-prod-down db-dev-up db-dev-down sqlc-init sqlc-generate
+.PHONY: up down build dev clean restart logs help version bump-patch bump-minor bump-major tag migrate-create migrate-up migrate-down db-prod-up db-prod-down db-dev-up db-dev-down sqlc-init sqlc-generate reset-db
 
 # Default target when just running 'make'
 help:
@@ -42,6 +42,9 @@ help:
 		@echo "$(COLOR_YELLOW)make migrate-create$(COLOR_RESET) - Create a new migration"
 		@echo "$(COLOR_YELLOW)make migrate-up$(COLOR_RESET) - Run migrations up"
 		@echo "$(COLOR_YELLOW)make migrate-down$(COLOR_RESET) - Run migrations down"
+		@echo "$(COLOR_YELLOW)make reset-db$(COLOR_RESET)   - Reset the database (drops all data!)"
+		@echo "$(COLOR_YELLOW)make sqlc-init$(COLOR_RESET)  - Initialize SQLC"
+		@echo "$(COLOR_YELLOW)make sqlc-generate$(COLOR_RESET) - Generate SQLC code"
 
 # Start production containers
 up:
@@ -147,4 +150,16 @@ sqlc-init:
 sqlc-generate:
 	@echo "$(COLOR_GREEN)Generating SQLC code...$(COLOR_RESET)"
 	@$(SQLC) generate
+
+# Reset database - drops everything and recreates
+reset-db:
+	@echo "$(COLOR_YELLOW)Warning: This will delete all data in the database!$(COLOR_RESET)"
+	@read -p "Are you sure you want to continue? [y/N] " confirm; \
+	if [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ]; then \
+		echo "$(COLOR_GREEN)Resetting database...$(COLOR_RESET)"; \
+		docker run -v $$(pwd)/broker-service/migrations:/migrations --network host migrate/migrate \
+			-path=/migrations/ -database "$(DSN)" drop -f; \
+	else \
+		echo "$(COLOR_YELLOW)Database reset cancelled.$(COLOR_RESET)"; \
+	fi
 

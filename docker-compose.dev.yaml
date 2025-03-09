@@ -1,5 +1,5 @@
 services:
-  broker-service:
+  qp-broker-service:
     build:
       context: ./broker-service
       dockerfile: Dockerfile.dev

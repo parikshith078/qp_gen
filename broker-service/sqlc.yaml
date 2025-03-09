@@ -22,3 +22,5 @@ sql:
             go_type:
               import: "time"
               type: "Time"
+          - db_type: "text"
+            go_type: "string"

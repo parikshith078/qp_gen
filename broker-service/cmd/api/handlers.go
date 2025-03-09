@@ -1,8 +1,10 @@
 package main
 
 import (
-	"log"
 	"net/http"
+
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/parikshith078/qp_gen/broker/internal/db/sqlc"
 )
 
 func (app *Config) Broker(w http.ResponseWriter, r *http.Request) {
@@ -13,30 +15,19 @@ func (app *Config) Broker(w http.ResponseWriter, r *http.Request) {
 	app.writeJSON(w, http.StatusOK, payload)
 }
 
-func (app *Config) ListUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := app.Db.ListUsers(r.Context())
-	if err != nil {
-		app.errorJSON(w, err, http.StatusInternalServerError)
-		return
-	}
-	payload := jsonReponse{
-		Error:   false,
-		Message: "success",
-		Data:    users,
-	}
-	app.writeJSON(w, http.StatusOK, payload)
-}
-
 func (app *Config) CreateUser(w http.ResponseWriter, r *http.Request) {
-	data := struct {
-		Email string `json:"email"`
-	}{}
-	err := app.readJSON(w, r, &data)
-	log.Print(data)
-	if err != nil {
-		return
+	data := sqlc.CreateUserParams{
+		Name:         pgtype.Text{String: "dat", Valid: true},
+		Email:        "da",
+		Username:     "cdd",
+		PasswordHash: "tewww",
 	}
-	users, err := app.Db.CreateUser(r.Context(), data.Email)
+	// err := app.readJSON(w, r, &data)
+	// log.Print(data)
+	// if err != nil {
+	// 	return
+	// }
+	user, err := app.Db.CreateUser(r.Context(), data)
 	if err != nil {
 		app.errorJSON(w, err, http.StatusInternalServerError)
 		return
@@ -44,7 +35,7 @@ func (app *Config) CreateUser(w http.ResponseWriter, r *http.Request) {
 	payload := jsonReponse{
 		Error:   false,
 		Message: "User created successfully!",
-		Data:    users,
+		Data:    user,
 	}
 	app.writeJSON(w, http.StatusCreated, payload)
 }

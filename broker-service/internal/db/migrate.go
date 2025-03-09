@@ -10,9 +10,9 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-func RunMigrations(dsn string) error {
+func RunMigrations(dsn string, migrationPath string) error {
 	m, err := migrate.New(
-		"file://migrations",
+		migrationPath,
 		dsn,
 	)
 	if err != nil {

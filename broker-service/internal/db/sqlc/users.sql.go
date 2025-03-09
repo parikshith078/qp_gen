@@ -24,7 +24,7 @@ type CreateUserParams struct {
 	Name         string `json:"name"`
 	Email        string `json:"email"`
 	Username     string `json:"username"`
-	PasswordHash string `json:"password_hash"`
+	PasswordHash string `json:"-"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -129,7 +129,7 @@ type UpdateUserByIDParams struct {
 	Name         string    `json:"name"`
 	Username     string    `json:"username"`
 	Email        string    `json:"email"`
-	PasswordHash string    `json:"password_hash"`
+	PasswordHash string    `json:"-"`
 }
 
 func (q *Queries) UpdateUserByID(ctx context.Context, arg UpdateUserByIDParams) (User, error) {

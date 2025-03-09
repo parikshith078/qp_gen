@@ -25,7 +25,7 @@ var dsn = os.Getenv("DSN")
 
 func main() {
 	// run migrations
-	db.RunMigrations(dsn)
+	db.RunMigrations(dsn, "file://migrations")
 
 	// validation setup
 	validate = validator.New(validator.WithRequiredStructEnabled())

@@ -22,6 +22,7 @@ func (app *Config) routes() *chi.Mux {
 	// Public routes
 	mux.Group(func(r chi.Router) {
 		r.Get("/health", app.HealthCheck)
+		r.Post("/register", app.Register)
 	})
 
 	// Protected routes

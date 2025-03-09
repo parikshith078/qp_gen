@@ -32,6 +32,22 @@ func (app *Config) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
+
+	// Check if email already exists
+	_, err = app.Db.GetUserByEmail(ctx, reqBody.Email)
+	if err == nil {
+		app.errorJSON(w, fmt.Errorf("user with email %s already exists", reqBody.Email), http.StatusBadRequest)
+		return
+	}
+
+	// Check if username already exists
+	_, err = app.Db.GetUserByUsername(ctx, reqBody.Username)
+	if err == nil {
+		app.errorJSON(w, fmt.Errorf("user with username %s already exists", reqBody.Username), http.StatusBadRequest)
+		return
+	}
+
+	// Create new user
 	user, err := app.Db.CreateUser(ctx, sqlc.CreateUserParams{
 		Name:         reqBody.Name,
 		Email:        reqBody.Email,

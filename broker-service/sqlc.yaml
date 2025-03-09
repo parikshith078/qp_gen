@@ -24,3 +24,5 @@ sql:
               type: "Time"
           - db_type: "text"
             go_type: "string"
+          - column: "users.password_hash"
+            go_struct_tag: 'json:"-"'

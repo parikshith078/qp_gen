@@ -105,6 +105,7 @@ tag: build
 	@git tag -a v$(VERSION) -m "Version $(VERSION)"
 	@git push --follow-tags
 	@echo "$(COLOR_GREEN)Pushing Docker images version $(VERSION)...$(COLOR_RESET)"
+	@echo "$(IMAGE_NAME):$(VERSION) $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION)"
 	@docker tag $(IMAGE_NAME):$(VERSION) $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION)
 	@docker tag $(IMAGE_NAME):$(VERSION) $(DOCKER_REGISTRY)/$(IMAGE_NAME):latest
 	@docker push $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION)

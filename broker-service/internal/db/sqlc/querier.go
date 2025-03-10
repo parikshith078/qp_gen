@@ -11,7 +11,11 @@ import (
 )
 
 type Querier interface {
+	CreateCsrfToken(ctx context.Context, arg CreateCsrfTokenParams) (CsrfToken, error)
+	CreateSessionToken(ctx context.Context, arg CreateSessionTokenParams) (SessionToken, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	GetCsrfTokenBySessionID(ctx context.Context, sessionID uuid.UUID) (CsrfToken, error)
+	GetSessionTokenByToken(ctx context.Context, token string) (SessionToken, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)

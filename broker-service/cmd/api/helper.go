@@ -2,6 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -15,8 +18,16 @@ func (app *Config) readJSON(w http.ResponseWriter, r *http.Request, data any) er
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(data)
 	if err != nil {
-		return err
+		switch {
+		case err == io.EOF:
+			return errors.New("request body is empty")
+		case errors.Is(err, io.ErrUnexpectedEOF):
+			return errors.New("request body contains invalid JSON")
+		default:
+			return fmt.Errorf("error parsing JSON: %v", err)
+		}
 	}
+
 	err = validate.Struct(data)
 	if err != nil {
 		return err

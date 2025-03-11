@@ -21,3 +21,7 @@ WHERE token = $1;
 -- name: GetCsrfTokenBySessionID :one
 SELECT * FROM csrf_tokens
 WHERE session_id = $1;
+
+-- name: DeleteSessionToken :exec
+DELETE FROM session_tokens
+WHERE token = $1;

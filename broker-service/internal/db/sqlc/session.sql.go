@@ -68,6 +68,16 @@ func (q *Queries) CreateSessionToken(ctx context.Context, arg CreateSessionToken
 	return i, err
 }
 
+const deleteSessionToken = `-- name: DeleteSessionToken :exec
+DELETE FROM session_tokens
+WHERE token = $1
+`
+
+func (q *Queries) DeleteSessionToken(ctx context.Context, token string) error {
+	_, err := q.db.Exec(ctx, deleteSessionToken, token)
+	return err
+}
+
 const getCsrfTokenBySessionID = `-- name: GetCsrfTokenBySessionID :one
 SELECT id, session_id, token, expires_at, created_at FROM csrf_tokens
 WHERE session_id = $1

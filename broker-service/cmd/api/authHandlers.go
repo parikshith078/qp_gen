@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -9,7 +11,6 @@ import (
 	"github.com/parikshith078/qp_gen/broker/internal/db/sqlc"
 )
 
-// TODO: register
 func (app *Config) Register(w http.ResponseWriter, r *http.Request) {
 	// TODO: update validation tags for password & username
 	reqBody := struct {
@@ -67,7 +68,6 @@ func (app *Config) Register(w http.ResponseWriter, r *http.Request) {
 	app.writeJSON(w, http.StatusOK, payload)
 }
 
-// TODO: login
 func (app *Config) Login(w http.ResponseWriter, r *http.Request) {
 	reqBody := struct {
 		Email    string `json:"email" validate:"required,email"`
@@ -84,13 +84,13 @@ func (app *Config) Login(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	user, err := app.Db.GetUserByEmail(ctx, reqBody.Email)
 	if err != nil {
-		app.errorJSON(w, InvalidCredsError, http.StatusUnauthorized)
+		app.errorJSON(w, ErrInvalidCredentials, http.StatusUnauthorized)
 		return
 	}
 	// validate password
 	err = VerifyPassword(reqBody.Password, user.PasswordHash)
 	if err != nil {
-		app.errorJSON(w, InvalidCredsError, http.StatusUnauthorized)
+		app.errorJSON(w, ErrInvalidCredentials, http.StatusUnauthorized)
 		return
 	}
 
@@ -146,5 +146,38 @@ func (app *Config) Login(w http.ResponseWriter, r *http.Request) {
 
 // TODO: logout
 func (app *Config) Logout(w http.ResponseWriter, r *http.Request) {
+	st, err := r.Cookie("session_token")
+	if err != nil || st.Value == "" {
+		app.errorJSON(w, ErrInvalidSession, http.StatusUnauthorized)
+		return
+	}
 
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	// no need to delete csrf as it will cascade
+	err = app.Db.DeleteSessionToken(ctx, st.Value)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		app.errorJSON(w, fmt.Errorf("failed to logout user"), http.StatusInternalServerError)
+		return
+	}
+
+	// Clear cookies by setting them to expire immediately
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    "",
+		Expires:  time.Now().Add(-1 * time.Hour),
+		HttpOnly: true,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "csrf_token",
+		Value:    "",
+		Expires:  time.Now().Add(-1 * time.Hour),
+		HttpOnly: false,
+	})
+
+	app.writeJSON(w, http.StatusOK, jsonReponse{
+		Error:   false,
+		Message: "logout successful",
+	})
 }

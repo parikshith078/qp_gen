@@ -346,3 +346,250 @@ func TestLoginRoute(t *testing.T) {
 		})
 	}
 }
+
+func TestLogout(t *testing.T) {
+	container, app := setupTestDB(t)
+	defer func() {
+		if err := container.Terminate(context.Background()); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	}()
+
+	// Create a test user and session
+	ctx := context.Background()
+	password := "testPassword123"
+	passwordHash, err := HashPassword(password)
+	require.NoError(t, err)
+
+	testUser, err := app.Db.CreateUser(ctx, sqlc.CreateUserParams{
+		Name:         "Test User",
+		Email:        "test@example.com",
+		Username:     "testuser",
+		PasswordHash: passwordHash,
+	})
+	require.NoError(t, err)
+
+	sessionToken := "test-session-token"
+	csrfToken := "test-csrf-token"
+	expiresAt := time.Now().Add(24 * time.Hour)
+
+	// Create session and CSRF tokens
+	sessionDoc, err := app.Db.CreateSessionToken(ctx, sqlc.CreateSessionTokenParams{
+		UserID:    testUser.ID,
+		Token:     sessionToken,
+		ExpiresAt: expiresAt,
+	})
+	require.NoError(t, err)
+
+	_, err = app.Db.CreateCsrfToken(ctx, sqlc.CreateCsrfTokenParams{
+		SessionID: sessionDoc.ID,
+		Token:     csrfToken,
+		ExpiresAt: expiresAt,
+	})
+	require.NoError(t, err)
+
+	tests := []struct {
+		name           string
+		setupCookies   bool
+		expectedStatus int
+		expectedError  bool
+	}{
+		{
+			name:           "Successful logout",
+			setupCookies:   true,
+			expectedStatus: http.StatusOK,
+			expectedError:  false,
+		},
+		{
+			name:           "Missing session token",
+			setupCookies:   false,
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/logout", nil)
+
+			if tt.setupCookies {
+				req.AddCookie(&http.Cookie{
+					Name:  "session_token",
+					Value: sessionToken,
+				})
+			}
+
+			rr := httptest.NewRecorder()
+			app.Logout(rr, req)
+
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+
+			var response jsonReponse
+			err = json.NewDecoder(rr.Body).Decode(&response)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.expectedError, response.Error)
+
+			if !tt.expectedError {
+				// Verify cookies are cleared
+				cookies := rr.Result().Cookies()
+				for _, cookie := range cookies {
+					assert.True(t, cookie.Expires.Before(time.Now()))
+					assert.Empty(t, cookie.Value)
+				}
+
+				// Verify session is removed from database
+				_, err = app.Db.GetSessionTokenByToken(ctx, sessionToken)
+				assert.Error(t, err)
+			}
+		})
+	}
+}
+
+func TestAuthMiddleware(t *testing.T) {
+	container, app := setupTestDB(t)
+	defer func() {
+		if err := container.Terminate(context.Background()); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	}()
+
+	// Create a test user and session
+	ctx := context.Background()
+	testUser, err := app.Db.CreateUser(ctx, sqlc.CreateUserParams{
+		Name:         "Test User",
+		Email:        "test@example.com",
+		Username:     "testuser",
+		PasswordHash: "hash",
+	})
+	require.NoError(t, err)
+
+	validSessionToken := "valid-session-token"
+	validCsrfToken := "valid-csrf-token"
+	expiredSessionToken := "expired-session-token"
+	expiredCsrfToken := "expired-csrf-token"
+
+	validExpiresAt := time.Now().Add(24 * time.Hour)
+	expiredExpiresAt := time.Now().Add(-24 * time.Hour)
+
+	// Create valid session and CSRF tokens
+	validSession, err := app.Db.CreateSessionToken(ctx, sqlc.CreateSessionTokenParams{
+		UserID:    testUser.ID,
+		Token:     validSessionToken,
+		ExpiresAt: validExpiresAt,
+	})
+	require.NoError(t, err)
+
+	_, err = app.Db.CreateCsrfToken(ctx, sqlc.CreateCsrfTokenParams{
+		SessionID: validSession.ID,
+		Token:     validCsrfToken,
+		ExpiresAt: validExpiresAt,
+	})
+	require.NoError(t, err)
+
+	// Create expired session and CSRF tokens
+	expiredSession, err := app.Db.CreateSessionToken(ctx, sqlc.CreateSessionTokenParams{
+		UserID:    testUser.ID,
+		Token:     expiredSessionToken,
+		ExpiresAt: expiredExpiresAt,
+	})
+	require.NoError(t, err)
+
+	_, err = app.Db.CreateCsrfToken(ctx, sqlc.CreateCsrfTokenParams{
+		SessionID: expiredSession.ID,
+		Token:     expiredCsrfToken,
+		ExpiresAt: expiredExpiresAt,
+	})
+	require.NoError(t, err)
+
+	tests := []struct {
+		name           string
+		sessionToken   string
+		csrfToken      string
+		expectedStatus int
+		expectedError  bool
+	}{
+		{
+			name:           "Valid tokens",
+			sessionToken:   validSessionToken,
+			csrfToken:      validCsrfToken,
+			expectedStatus: http.StatusOK,
+			expectedError:  false,
+		},
+		{
+			name:           "Missing session token",
+			sessionToken:   "",
+			csrfToken:      validCsrfToken,
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  true,
+		},
+		{
+			name:           "Missing CSRF token",
+			sessionToken:   validSessionToken,
+			csrfToken:      "",
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  true,
+		},
+		{
+			name:           "Expired session",
+			sessionToken:   expiredSessionToken,
+			csrfToken:      expiredCsrfToken,
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  true,
+		},
+		{
+			name:           "Invalid CSRF token",
+			sessionToken:   validSessionToken,
+			csrfToken:      "invalid-token",
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a test handler that will be wrapped by the middleware
+			nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// If we reach here, middleware passed
+				app.writeJSON(w, http.StatusOK, jsonReponse{
+					Error:   false,
+					Message: "success",
+				})
+			})
+
+			// Create request with necessary cookies and headers
+			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			if tt.sessionToken != "" {
+				req.AddCookie(&http.Cookie{
+					Name:  "session_token",
+					Value: tt.sessionToken,
+				})
+			}
+			if tt.csrfToken != "" {
+				req.Header.Set("X-CSRF-Token", tt.csrfToken)
+			}
+
+			rr := httptest.NewRecorder()
+
+			// Apply middleware
+			handler := app.AuthMiddleware(nextHandler)
+			handler.ServeHTTP(rr, req)
+
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+
+			var response jsonReponse
+			err = json.NewDecoder(rr.Body).Decode(&response)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.expectedError, response.Error)
+
+			if !tt.expectedError {
+				// Verify user_id is added to context
+				userId, err := GetUserIDFromContext(req.Context())
+				assert.NoError(t, err)
+				assert.NotNil(t, userId)
+				// assert.Equal(t, testUser.ID.String(), userId.String())
+			}
+		})
+	}
+}

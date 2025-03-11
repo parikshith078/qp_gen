@@ -1,6 +1,9 @@
 package main
 
 import (
+	"log"
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -26,7 +29,28 @@ func (app *Config) routes() *chi.Mux {
 		r.Post("/login", app.Login)
 	})
 
-	// Protected routes
+	// Protected routesut
+	mux.Group(func(r chi.Router) {
+		r.Use(app.AuthMiddleware)
+		r.Post("/logout", app.Logout)
+		r.Post("/test", func(w http.ResponseWriter, r *http.Request) {
+			id, err := GetUserIDFromContext(r.Context())
+			if err != nil {
+				app.errorJSON(w, err, http.StatusUnauthorized)
+				return
+			}
+			log.Print("UserID: ", id)
+			user, err := app.Db.GetUserByID(r.Context(), id)
+			if err != nil {
+				app.errorJSON(w, err, http.StatusInternalServerError)
+				return
+			}
+			app.writeJSON(w, http.StatusOK, &jsonReponse{
+				Message: "got it",
+				Data:    user,
+			})
+		})
+	})
 
 	return mux
 }

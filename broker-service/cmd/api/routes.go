@@ -12,6 +12,9 @@ import (
 func (app *Config) routes() *chi.Mux {
 	mux := chi.NewRouter()
 	// make it open for all
+	mux.Use(middleware.Logger) // <--<< Logger should come before Recoverer
+	mux.Use(middleware.Recoverer)
+
 	mux.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},

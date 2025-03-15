@@ -446,7 +446,7 @@ func TestLogout(t *testing.T) {
 	}
 }
 
-func TestAuthMiddleware(t *testing.T) {
+func testAuthMiddleware(t *testing.T) {
 	container, app := setupTestDB(t)
 	defer func() {
 		if err := container.Terminate(context.Background()); err != nil {

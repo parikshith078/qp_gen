@@ -158,7 +158,7 @@ func (app *Config) Logout(w http.ResponseWriter, r *http.Request) {
 	// no need to delete csrf as it will cascade
 	err = app.Db.DeleteSessionToken(ctx, st.Value)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		app.errorJSON(w, fmt.Errorf("failed to logout user"), http.StatusInternalServerError)
+		app.errorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
 

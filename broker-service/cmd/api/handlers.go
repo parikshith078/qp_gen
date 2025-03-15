@@ -2,8 +2,6 @@ package main
 
 import (
 	"net/http"
-
-	"github.com/parikshith078/qp_gen/broker/internal/db/sqlc"
 )
 
 func (app *Config) HealthCheck(w http.ResponseWriter, r *http.Request) {
@@ -12,29 +10,4 @@ func (app *Config) HealthCheck(w http.ResponseWriter, r *http.Request) {
 		Message: "Hit the broker again! pow",
 	}
 	app.writeJSON(w, http.StatusOK, payload)
-}
-
-func (app *Config) CreateUser(w http.ResponseWriter, r *http.Request) {
-	data := sqlc.CreateUserParams{
-		Name:         "test",
-		Email:        "da",
-		Username:     "cdd",
-		PasswordHash: "tewww",
-	}
-	// err := app.readJSON(w, r, &data)
-	// log.Print(data)
-	// if err != nil {
-	// 	return
-	// }
-	user, err := app.Db.CreateUser(r.Context(), data)
-	if err != nil {
-		app.errorJSON(w, err, http.StatusInternalServerError)
-		return
-	}
-	payload := jsonReponse{
-		Error:   false,
-		Message: "User created successfully!",
-		Data:    user,
-	}
-	app.writeJSON(w, http.StatusCreated, payload)
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"time"
 )
@@ -65,7 +64,6 @@ func (app *Config) AuthMiddleware(next http.Handler) http.Handler {
 
 		// Add user ID to request context for downstream handlers
 		// Use the timeout context we created earlier as the parent
-		log.Print("userid in middleware: ", sessionToken.UserID)
 		r = r.WithContext(context.WithValue(ctx, userIDKey, sessionToken.UserID))
 
 		// Update last activity timestamp

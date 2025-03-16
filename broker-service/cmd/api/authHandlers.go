@@ -14,10 +14,10 @@ import (
 func (app *Config) Register(w http.ResponseWriter, r *http.Request) {
 	// TODO: update validation tags for password & username
 	reqBody := struct {
-		Name     string `json:"name" validate:"required"`
-		Email    string `json:"email" validate:"required,email"`
-		Username string `json:"username" validate:"required"`
-		Password string `json:"password" validate:"required"`
+		Name     string `json:"name" validate:"required,min=2,max=100"`
+		Email    string `json:"email" validate:"required,email,max=255"`
+		Username string `json:"username" validate:"required,alphanum,min=3,max=30"`
+		Password string `json:"password" validate:"required,min=8"`
 	}{}
 
 	// Decode & validate request body
@@ -26,13 +26,16 @@ func (app *Config) Register(w http.ResponseWriter, r *http.Request) {
 		app.errorJSON(w, err, http.StatusBadRequest)
 		return
 	}
+
 	// Hash the password
 	passwordHash, err := HashPassword(reqBody.Password)
 	if err != nil {
 		app.errorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+
+	// Create a context with timeout for database operations
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	// Check if email already exists
@@ -60,6 +63,7 @@ func (app *Config) Register(w http.ResponseWriter, r *http.Request) {
 		app.errorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
+
 	payload := jsonReponse{
 		Error:   false,
 		Message: fmt.Sprintf("User created successfully with id %v", user.ID),
@@ -79,14 +83,18 @@ func (app *Config) Login(w http.ResponseWriter, r *http.Request) {
 		app.errorJSON(w, err, http.StatusBadRequest)
 		return
 	}
-	// get user by email
+
+	// Create a new context with timeout
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
+
+	// get user by email
 	user, err := app.Db.GetUserByEmail(ctx, reqBody.Email)
 	if err != nil {
 		app.errorJSON(w, ErrInvalidCredentials, http.StatusUnauthorized)
 		return
 	}
+
 	// validate password
 	err = VerifyPassword(reqBody.Password, user.PasswordHash)
 	if err != nil {
@@ -94,48 +102,81 @@ func (app *Config) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// set cooke
+	// Generate tokens
 	sessionToken, err := GenerateSessionToken()
 	if err != nil {
 		app.errorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
+
 	csrfToken, err := GenerateSessionToken()
 	if err != nil {
 		app.errorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
+
 	experiesTime := time.Now().Add(7 * 24 * time.Hour) // expires after one week
+
+	// Set cookies
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
 		Value:    sessionToken,
 		Expires:  experiesTime,
 		HttpOnly: true,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "csrf_token",
 		Value:    csrfToken,
 		Expires:  experiesTime,
-		HttpOnly: false, // need to accessable to client-side
+		HttpOnly: false, // need to be accessible to client-side
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
 	})
+
+	// Create a new context for database operations
+	dbCtx, dbCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer dbCancel()
 
 	// store session token in db
-	sessionDoc, err := app.Db.CreateSessionToken(ctx, sqlc.CreateSessionTokenParams{
-		UserID: user.ID, Token: sessionToken, ExpiresAt: experiesTime,
+	sessionDoc, err := app.Db.CreateSessionToken(dbCtx, sqlc.CreateSessionTokenParams{
+		UserID:    user.ID,
+		Token:     sessionToken,
+		ExpiresAt: experiesTime,
 	})
 	if err != nil {
 		app.errorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	_, err = app.Db.CreateCsrfToken(ctx, sqlc.CreateCsrfTokenParams{
-		SessionID: sessionDoc.ID, Token: csrfToken, ExpiresAt: experiesTime,
+	// Create CSRF token with a new context
+	csrfCtx, csrfCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer csrfCancel()
+
+	_, err = app.Db.CreateCsrfToken(csrfCtx, sqlc.CreateCsrfTokenParams{
+		SessionID: sessionDoc.ID,
+		Token:     csrfToken,
+		ExpiresAt: experiesTime,
 	})
 	if err != nil {
 		app.errorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
+
+	// Update user's last activity in a separate goroutine
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel() // Ensure context is canceled to prevent resource leaks
+
+		err := app.Db.UpdateUserLastActivity(ctx, user.ID)
+		if err != nil {
+			// Log the error but don't affect the main request flow
+			app.logger.Printf("Failed to update last activity for user %s: %v", user.ID, err)
+		}
+	}()
+
 	// return success message
 	app.writeJSON(w, http.StatusOK, jsonReponse{
 		Error:   false,

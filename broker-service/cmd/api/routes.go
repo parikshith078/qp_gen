@@ -20,7 +20,7 @@ func (app *Config) routes() *chi.Mux {
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
 		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
+		AllowCredentials: true,
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 	mux.Use(middleware.Heartbeat("/ping"))
@@ -36,6 +36,7 @@ func (app *Config) routes() *chi.Mux {
 	mux.Group(func(r chi.Router) {
 		r.Use(app.AuthMiddleware)
 		r.Post("/logout", app.Logout)
+		r.Get("/user/{userid}", app.GetUserByID)
 		r.Post("/test", func(w http.ResponseWriter, r *http.Request) {
 			id, err := GetUserIDFromContext(r.Context())
 			if err != nil {

@@ -14,7 +14,7 @@ type jsonReponse struct {
 	Data    any    `json:"data,omitempty"`
 }
 
-func (app *Config) readJSON(w http.ResponseWriter, r *http.Request, data any) error {
+func (app *Config) readJSON(_ http.ResponseWriter, r *http.Request, data any) error {
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(data)
 	if err != nil {

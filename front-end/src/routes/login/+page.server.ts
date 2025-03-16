@@ -1,5 +1,5 @@
 import { api } from '$lib/apis/axiosConfig';
-import { type ApiResponse, type User } from '$lib/apis/types';
+import { type ApiResponse, type UserModel } from '$lib/apis/types';
 import { fail, redirect, type Actions } from '@sveltejs/kit';
 import type { AxiosError } from 'axios';
 import type { PageServerLoad } from './$types';
@@ -24,7 +24,7 @@ export const actions = {
 
 		try {
 			// Attempt to login the user
-			const { data, headers } = await api.post<ApiResponse<User>>('/login', payload);
+			const { data, headers } = await api.post<ApiResponse<UserModel>>('/login', payload);
 
 			// Get cookies from the response
 			const { sessionToken, csrfToken } = extractTokensFromHeaders(headers);

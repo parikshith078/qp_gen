@@ -16,7 +16,8 @@ import (
 var webPort = os.Getenv("WEB_PORT")
 
 type Config struct {
-	Db *sqlc.Queries
+	Db     *sqlc.Queries
+	logger *log.Logger
 }
 
 var validate *validator.Validate
@@ -24,8 +25,14 @@ var validate *validator.Validate
 var dsn = os.Getenv("DSN")
 
 func main() {
+	// Set up logger
+	logger := log.New(os.Stdout, "[BROKER] ", log.Ldate|log.Ltime|log.Lshortfile)
+
 	// run migrations
-	db.RunMigrations(dsn, "file://migrations")
+	err := db.RunMigrations(dsn, "file://migrations")
+	if err != nil {
+		logger.Fatal("DB migration failed: ", err)
+	}
 
 	// validation setup
 	validate = validator.New(validator.WithRequiredStructEnabled())
@@ -33,16 +40,16 @@ func main() {
 	ctx := context.Background()
 	conn, err := pgx.Connect(context.Background(), dsn)
 	if err != nil {
-		log.Fatal("DB connection failed")
-		panic(err)
+		logger.Fatal("DB connection failed: ", err)
 	}
 	defer conn.Close(ctx)
 	repository := sqlc.New(conn)
 	app := Config{
-		Db: repository,
+		Db:     repository,
+		logger: logger,
 	}
 
-	log.Printf("Starting broker service on port %s\n", webPort)
+	logger.Printf("Starting broker service on port %s\n", webPort)
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%s", webPort),
@@ -51,6 +58,6 @@ func main() {
 
 	err = srv.ListenAndServe()
 	if err != nil {
-		panic(err)
+		logger.Fatal(err)
 	}
 }

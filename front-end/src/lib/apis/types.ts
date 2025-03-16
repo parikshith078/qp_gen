@@ -1,5 +1,5 @@
 // User data type
-export interface User {
+export interface UserModel {
   id: string;
   name: string;
   email: string;
@@ -13,7 +13,7 @@ export interface User {
 export interface RegisterUserResponse {
   error: boolean;
   message: string;
-  data: User;
+  data: UserModel;
 }
 
 // Generic API response type

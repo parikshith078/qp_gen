@@ -1,0 +1,41 @@
+Total_Marks: 50
+Duration: "1.5 to 2 hours"
+Sections:
+  - Section: A
+    Question_Type: "MCQ"
+    Question_Type_Full: "Multiple Choice Questions"
+    Number_of_Questions: 10
+    Marks_per_Question: 1
+    Total_Marks: 10
+  - Section: B
+    Question_Type: "VSA"
+    Question_Type_Full: "Very Short Answer Questions"
+    Number_of_Questions: 5
+    Marks_per_Question: 2
+    Total_Marks: 10
+  - Section: C
+    Question_Type: "SA"
+    Question_Type_Full: "Short Answer Questions"
+    Number_of_Questions: 5
+    Marks_per_Question: 3
+    Total_Marks: 15
+  - Section: D
+    Question_Type: "LA"
+    Question_Type_Full: "Long Answer Questions"
+    Number_of_Questions: 2
+    Marks_per_Question: 5
+    Total_Marks: 10
+  - Section: E
+    Question_Type: "CB"
+    Question_Type_Full: "Case-Based/Source-Based Questions"
+    Number_of_Questions: 1
+    Marks_per_Question: 5
+    Total_Marks: 5
+Internal_Choice: "Approximately 33% internal choice can be provided across various questions to cater to diverse student strengths."
+Competency_Based_Questions: "In alignment with CBSE's emphasis on competency-based education, schools may include a significant portion of questions that assess application and analytical skills."
+Note: "This pattern is a general guideline and can be adjusted by individual schools based on their specific requirements and the portions of the syllabus covered."
+Answer_Length_Guidelines:
+  - "2-mark questions": "30–50 words"
+  - "3-mark questions": "50–80 words"
+  - "5-mark questions": "80–120 words"
+

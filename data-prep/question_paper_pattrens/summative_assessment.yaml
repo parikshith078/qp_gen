@@ -1,0 +1,39 @@
+Total_Marks: 80
+Duration: "3 hours"
+Sections:
+  - Section: A
+    Question_Type: "MCQ"
+    Question_Type_Full: "Multiple Choice Questions (MCQs) & Assertion-Reasoning"
+    Number_of_Questions: 20
+    Marks_per_Question: 1
+    Total_Marks: 20
+  - Section: B
+    Question_Type: "VSA"
+    Question_Type_Full: "Very Short Answer"
+    Number_of_Questions: 6
+    Marks_per_Question: 2
+    Total_Marks: 12
+  - Section: C
+    Question_Type: "SA"
+    Question_Type_Full: "Short Answer"
+    Number_of_Questions: 7
+    Marks_per_Question: 3
+    Total_Marks: 21
+  - Section: D
+    Question_Type: "LA"
+    Question_Type_Full: "Long Answer"
+    Number_of_Questions: 3
+    Marks_per_Question: 5
+    Total_Marks: 15
+  - Section: E
+    Question_Type: "CB"
+    Question_Type_Full: "Case-Based/Source-Based Questions"
+    Number_of_Questions: 3
+    Marks_per_Question: 4
+    Total_Marks: 12
+Internal_Choice: "Approximately 33% internal choice is provided across various questions."
+Competency_Based_Questions: "50% of the paper focuses on competency-based questions, assessing application and analytical skills."
+Answer_Length_Guidelines:
+  - "2-mark questions": "30–50 words"
+  - "3-mark questions": "50–80 words"
+  - "5-mark questions": "80–120 words"
